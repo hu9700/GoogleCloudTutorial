@@ -1,0 +1,166 @@
+https://swagger.io/docs/specification/api-host-and-base-path/
+
+Base URL
+    assuming the base URL of https://api.example.com/v1
+    the /users endpoint refer to
+        https://api.example.com/v1/users
+        
+    https://api.example.com/v1/users?role=admin&status=active
+        base url:           https://api.example.com/v1/
+        endpoint path:      users
+        query paramenter:   role=admin&status=active
+        
+Server URL Format
+    Syntax:
+        scheme://host[:port][/path]
+        
+    scheme:
+        https://
+        http://
+        ws:// websocket
+        wss:// websocket
+        
+    example of url
+        https://api.example.com
+        https://api.example.com:8443/v1/reports
+        http://localhost:3025/v1
+        http://10.0.81.36/v1
+        ws://api.example.com/v1
+        wss://api.example.com/v1
+        /v1/reports
+        /
+        //api.example.com    
+    
+    If the servers array is not provided or is empty, the server URL defaults to /: 
+    servers:
+    - url: /
+    
+Server Templating
+    Any part of the server URL
+    – scheme, host name or its parts, port, subpath 
+    – can be parameterized using variables. 
+    Variables are indicated by {curly braces} in the server url,
+    
+    servers:
+      - url: https://{customerId}.saas-app.com:{port}/v2
+        variables:
+          customerId:
+            default: demo
+            description: Customer ID assigned by the service provider
+          port:
+            enum:
+              - '443'
+              - '8443'
+            default: '443'
+            
+    server variables are assumed to be strings
+    default value is required, which will be used if the client does not supply a value
+    
+        Common use cases for server templating:
+            Specifying multiple protocols (such as HTTP vs HTTPS).
+            SaaS (hosted) applications where each customer has their own subdomain.
+            Regional servers in different geographical regions (example: Amazon Web Services).
+            Single API definition for SaaS and on-premise APIs.
+            
+
+    Example:
+        HTTPS and HTTP
+            servers:
+              - url: http://api.example.com
+              - url: https://api.example.com            
+            or
+            servers:
+              - url: '{protocol}://api.example.com'
+                variables:
+                  protocol:
+                    enum:
+                      - http
+                      - https
+                    default: https      
+                    
+        Production, Development and Staging
+            servers:
+              - url: https://{environment}.example.com/v2
+                variables:
+                  environment:
+                    default: api    # Production server
+                    enum:
+                      - api         # Production server
+                      - api.dev     # Development server
+                      - api.staging # Staging server        
+        
+        SaaS and On-Premise
+            servers:
+              - url: '{server}/v1'
+                variables:
+                  server:
+                    default: https://api.example.com  # SaaS server            
+            
+        Regional Endpoints for Different Geographical Areas
+            servers:
+              - url: https://{region}.api.cognitive.microsoft.com
+                variables:
+                  region:
+                    default: westus
+                    enum:
+                      - westus
+                      - eastus2
+                      - westcentralus
+                      - westeurope
+                      - southeastasia        
+                      
+Overriding Servers
+    The global servers array can be overridden on the path level or operation level.
+    
+    Common examples are:
+        - Different base URL for file upload and download operations,
+        - Deprecated but still functional endpoints.
+        
+        servers:
+          - url: https://api.example.com/v1
+        paths:
+          /files:
+            description: File upload and download operations
+            servers:
+              - url: https://files.example.com
+                description: Override base path for all operations with the /files path
+            ...
+          /ping:
+            get:
+              servers:
+                - url: https://echo.example.com
+                  description: Override base path for the GET /ping operation        
+
+Relative URLs
+    The URLs in the servers array can be relative
+    the URL is resolved against the server that hosts the given OpenAPI definition.
+    
+    For example, if the definition hosted at http://localhost:3001/
+    openapi.yaml specifies url: /v2, the url is resolved to http://localhost:3001/v2
+    
+    external documentation URL and others, can be specified relative to the server URL
+    
+    Note that if using multiple servers, 
+    the resources specified by relative URLs are expected to exist on all servers.
+    
+        servers:
+          - url: https://api.example.com
+          - url: https://sandbox-api.example.com
+        # Relative URL to Terms of Service
+        info:
+          version: 0.0.0
+          title: test
+          termsOfService: /terms-of-use
+        # Relative URL to external documentation
+        externalDocs:
+          url: /docs
+          description: Find more info here
+        # Relative URLs to OAuth2 authorization and token URLs
+        components:
+          securitySchemes:
+            oauth2:
+              type: oauth2
+              flows:
+                authorizationCode:
+                  authorizationUrl: /oauth/dialog
+                  tokenUrl: /oauth/token    
